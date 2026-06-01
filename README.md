@@ -3,7 +3,8 @@
 Standalone public backup of the `nandoroid` shell configuration for Hyprland/CachyOS.
 
 > [!WARNING]
-> This repository is highly experimental and unstable. Significant portions of the config were tuned directly on a live system, meaning some features may be incomplete, machine-specific, or broken outside this setup. Use as a reference/backup, not as a polished drop-in shell.
+> This repository is highly experimental and unstable. Most of the code chunks were generated or heavily modified using **Codex 5.5** while tuning a live setup, meaning some features may be incomplete, machine-specific, or broken outside this environment. Use as a reference/backup, not as a polished drop-in shell.
+
 
 ## Screenshots
 
