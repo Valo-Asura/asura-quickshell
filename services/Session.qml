@@ -20,7 +20,7 @@ Singleton {
     }
 
     function logout() {
-        Quickshell.execDetached(["hyprctl", "dispatch", HyprlandCompat.dsp("exit", "exit")]);
+        Quickshell.execDetached(["bash", "-c", "if command -v hyprshutdown >/dev/null 2>&1; then exec hyprshutdown -t 'Logging out...'; fi; hyprctl dispatch 'hl.dsp.exit()' || hyprctl dispatch exit"]);
     }
 
     function launchTaskManager() {
@@ -32,11 +32,11 @@ Singleton {
     }
 
     function poweroff() {
-        Quickshell.execDetached(["bash", "-c", "systemctl poweroff || loginctl poweroff"]);
+        Quickshell.execDetached(["bash", "-c", "if command -v hyprshutdown >/dev/null 2>&1; then exec hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff || loginctl poweroff'; fi; systemctl poweroff || loginctl poweroff"]);
     }
 
     function reboot() {
-        Quickshell.execDetached(["bash", "-c", "reboot || loginctl reboot"]);
+        Quickshell.execDetached(["bash", "-c", "if command -v hyprshutdown >/dev/null 2>&1; then exec hyprshutdown -t 'Restarting...' --post-cmd 'systemctl reboot || loginctl reboot'; fi; systemctl reboot || loginctl reboot"]);
     }
 
     function rebootToFirmware() {

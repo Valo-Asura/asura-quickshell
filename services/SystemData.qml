@@ -56,9 +56,25 @@ Singleton {
     // Processes (Disabled for now to fix SIGSEGV)
     property var allProcesses: []
     
-    // GPUs (Disabled for now to fix SIGSEGV)
+    // GPUs
     property var availableGpus: []
     readonly property bool hasValidGpuData: availableGpus.length > 0
+    readonly property real primaryGpuTemperature: {
+        const list = root.availableGpus || [];
+        for (let i = 0; i < list.length; i++) {
+            if ((list[i].temp || 0) > 0) return list[i].temp;
+        }
+        return 0;
+    }
+    readonly property string primaryGpuStatus: {
+        const list = root.availableGpus || [];
+        if (list.length === 0) return "No GPU";
+        for (let i = 0; i < list.length; i++) {
+            const text = root.gpuTemperatureText(list[i]);
+            if (text !== "--" && text !== "Asleep" && text !== "No sensor") return text;
+        }
+        return root.gpuTemperatureText(list[0]);
+    }
 
     // History tracking
     readonly property int historySize: 60
@@ -99,7 +115,7 @@ Singleton {
         // Process enumeration is the expensive part of dgop, so only enable it
         // while the Processes tab is visible.
         if (isProcessPageActive) return "cpu,memory,diskmounts,network,disk,system,processes,gpu";
-        if (isMonitorActive) return "cpu,memory,diskmounts,network,disk,system,gpu";
+        if (isMonitorActive || isQuickSettingsOpen) return "cpu,memory,diskmounts,network,disk,system,gpu";
         
         return "cpu,memory,diskmounts,network,disk,system";
     }
@@ -112,6 +128,7 @@ Singleton {
     property var lastUpdateTime: 0
     property bool updatePending: false
     property int lastNvidiaPoll: 0
+    property int lastGpuHwmonPoll: 0
 
     function update() {
         if (shouldPause) return;
@@ -122,13 +139,30 @@ Singleton {
         }
     }
 
-    function mergeNvidiaGpu(name, temp, usage, power, driver) {
+    function gpuTemperatureText(gpu) {
+        if (!gpu) return "--";
+        if ((gpu.temp || 0) > 0) return `${Math.round(gpu.temp)}°C`;
+
+        const identity = `${gpu.vendor || ""} ${gpu.name || ""}`.toLowerCase();
+        if (identity.includes("nvidia") && !(gpu.driver || "").trim()) return "Driver inactive";
+        if ((gpu.hwmon || "") === "unknown") return "No sensor";
+        return "Asleep";
+    }
+
+    function mergeGpu(vendorHint, name, temp, usage, power, driver, hwmon) {
         let list = (root.availableGpus || []).slice();
         let index = -1;
+        const normalizedVendor = (vendorHint || "").toLowerCase();
+        const normalizedName = (name || "").toLowerCase();
+
         for (let i = 0; i < list.length; i++) {
             const vendor = (list[i].vendor || "").toLowerCase();
             const gpuName = (list[i].name || "").toLowerCase();
-            if (vendor.includes("nvidia") || gpuName.includes("nvidia") || gpuName.includes("geforce")) {
+            if ((normalizedVendor && vendor.includes(normalizedVendor))
+                    || (normalizedVendor && gpuName.includes(normalizedVendor))
+                    || (normalizedName && gpuName.includes(normalizedName))
+                    || (normalizedName.includes("geforce") && gpuName.includes("geforce"))
+                    || (normalizedName.includes("rtx") && gpuName.includes("rtx"))) {
                 index = i;
                 break;
             }
@@ -136,13 +170,14 @@ Singleton {
 
         const existing = index >= 0 ? list[index] : {};
         const merged = {
-            name: name || existing.name || "NVIDIA GPU",
-            vendor: "NVIDIA",
+            name: name || existing.name || "GPU",
+            vendor: vendorHint || existing.vendor || "",
             temp: Math.round(temp || existing.temp || 0),
             usage: isNaN(usage) ? (existing.usage || 0) : usage,
             power: isNaN(power) ? (existing.power || 0) : power,
-            driver: driver || existing.driver || "nvidia",
-            pciId: existing.pciId || ""
+            driver: driver || existing.driver || "",
+            pciId: existing.pciId || "",
+            hwmon: hwmon || existing.hwmon || ""
         };
 
         if (index >= 0) list[index] = merged;
@@ -150,12 +185,24 @@ Singleton {
         root.availableGpus = list;
     }
 
+    function mergeNvidiaGpu(name, temp, usage, power, driver) {
+        root.mergeGpu("NVIDIA", name, temp, usage, power, driver || "nvidia", "nvidia-smi");
+    }
+
     function refreshNvidiaGpu() {
-        if (!isMonitorActive) return;
+        if (!isMonitorActive && !isQuickSettingsOpen) return;
         const now = Date.now();
         if (nvidiaGpuProcess.running || (now - lastNvidiaPoll) < 5000) return;
         lastNvidiaPoll = now;
         nvidiaGpuProcess.running = true;
+    }
+
+    function refreshGpuHwmon() {
+        if (!isMonitorActive && !isQuickSettingsOpen) return;
+        const now = Date.now();
+        if (gpuHwmonProcess.running || (now - lastGpuHwmonPoll) < 5000) return;
+        lastGpuHwmonPoll = now;
+        gpuHwmonProcess.running = true;
     }
 
     Timer {
@@ -296,6 +343,7 @@ Singleton {
                         if (data.gpu && (data.gpu.gpus || Array.isArray(data.gpu))) {
                             const gpus = Array.isArray(data.gpu) ? data.gpu : data.gpu.gpus;
                             let needsNvidiaFallback = false;
+                            let needsHwmonFallback = false;
                             root.availableGpus = gpus.map(gpu => ({
                                 name: gpu.displayName || gpu.name || "GPU",
                                 vendor: gpu.vendor || "",
@@ -303,17 +351,21 @@ Singleton {
                                 pciId: gpu.pciId || "",
                                 driver: gpu.driver || "",
                                 usage: gpu.usage || 0,
-                                power: gpu.power || 0
+                                power: gpu.power || 0,
+                                hwmon: gpu.hwmon || ""
                             }));
                             gpus.forEach(gpu => {
                                 const vendor = (gpu.vendor || gpu.fullName || gpu.displayName || gpu.name || "").toLowerCase();
                                 if (vendor.includes("nvidia") && !(gpu.temperature > 0)) needsNvidiaFallback = true;
+                                if (!(gpu.temperature > 0)) needsHwmonFallback = true;
                             });
                             if (needsNvidiaFallback) root.refreshNvidiaGpu();
-                        } else if (!isMonitorActive) {
+                            if (needsHwmonFallback) root.refreshGpuHwmon();
+                        } else if (!isMonitorActive && !isQuickSettingsOpen) {
                             root.availableGpus = []; // Clear when not monitoring
                         } else {
                             root.refreshNvidiaGpu();
+                            root.refreshGpuHwmon();
                         }
                     } catch (e) {
 
@@ -352,6 +404,44 @@ Singleton {
 
         onExited: {
             nvidiaGpuProcess.running = false;
+        }
+    }
+
+    Process {
+        id: gpuHwmonProcess
+        command: ["bash", "-c", "for d in /sys/class/hwmon/hwmon*; do name=$(cat \"$d/name\" 2>/dev/null || true); lname=$(printf '%s' \"$name\" | tr '[:upper:]' '[:lower:]'); case \"$lname\" in *nvidia*|*nouveau*|*amdgpu*|*radeon*|*i915*|*xe*) ;; *) continue ;; esac; for input in \"$d\"/temp*_input; do [ -r \"$input\" ] || continue; base=${input%_input}; label=$(cat \"${base}_label\" 2>/dev/null || echo temp); value=$(cat \"$input\" 2>/dev/null || echo 0); [ \"$value\" -gt 0 ] 2>/dev/null || continue; printf '%s,%s,%s\\n' \"$name\" \"$label\" \"$value\"; break; done; done"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.trim().split("\n").filter(line => line.trim() !== "");
+                lines.forEach(line => {
+                    const parts = line.split(",").map(part => part.trim());
+                    const hwmonName = parts[0] || "GPU";
+                    const label = parts[1] || "temp";
+                    const temp = parseFloat(parts[2]) / 1000;
+                    if (isNaN(temp) || temp <= 0) return;
+
+                    const identity = hwmonName.toLowerCase();
+                    let vendor = "GPU";
+                    let displayName = `${hwmonName} ${label}`.trim();
+                    if (identity.includes("nvidia") || identity.includes("nouveau")) {
+                        vendor = "NVIDIA";
+                        displayName = "NVIDIA GPU";
+                    } else if (identity.includes("amdgpu") || identity.includes("radeon")) {
+                        vendor = "AMD";
+                        displayName = "AMD GPU";
+                    } else if (identity.includes("i915") || identity === "xe") {
+                        vendor = "Intel";
+                        displayName = "Intel GPU";
+                    }
+
+                    root.mergeGpu(vendor, displayName, temp, NaN, NaN, "hwmon", hwmonName);
+                });
+            }
+        }
+
+        onExited: {
+            gpuHwmonProcess.running = false;
         }
     }
 

@@ -23,7 +23,7 @@ Rectangle {
         }
         spacing: 12 * Appearance.effectiveScale
 
-        // Top Row: 4 key metrics with background pills
+        // Top Row: key metrics with background pills
         RowLayout {
             Layout.fillWidth: true
             spacing: 8 * Appearance.effectiveScale
@@ -42,13 +42,26 @@ Rectangle {
 
             StatItem {
                 statIcon: "thermostat"
-                label: "TEMP"
+                label: "CPU °C"
                 value: SystemData.cpuTemperature
                 isTemperature: true
                 Layout.fillWidth: true
                 onClicked: {
                     GlobalStates.systemMonitorIndex = 0;
                     GlobalStates.performanceSubIndex = 1;
+                    GlobalStates.activateSystemMonitor();
+                }
+            }
+
+            StatItem {
+                statIcon: "developer_board"
+                label: "GPU °C"
+                value: SystemData.primaryGpuTemperature
+                isTemperature: true
+                Layout.fillWidth: true
+                onClicked: {
+                    GlobalStates.systemMonitorIndex = 0;
+                    GlobalStates.performanceSubIndex = 2;
                     GlobalStates.activateSystemMonitor();
                 }
             }

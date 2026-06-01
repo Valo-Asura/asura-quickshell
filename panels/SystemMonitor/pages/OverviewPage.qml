@@ -114,9 +114,7 @@ Item {
                             Item { Layout.fillWidth: true }
                             StyledText {
                                 text: SystemData.availableGpus.length > 0
-                                    ? (SystemData.availableGpus[0].temp > 0
-                                        ? SystemData.availableGpus[0].temp + "°C"
-                                        : "Ready")
+                                    ? SystemData.gpuTemperatureText(SystemData.availableGpus[0])
                                     : "--"
                                 font.pixelSize: Appearance.font.pixelSize.large
                                 font.weight: Font.Black

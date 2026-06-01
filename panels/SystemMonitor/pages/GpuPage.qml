@@ -46,7 +46,7 @@ Item {
                         ColumnLayout {
                             Layout.alignment: Qt.AlignRight
                             StyledText { 
-                                text: modelData.temp > 0 ? modelData.temp + "°C" : "--°C"
+                                text: SystemData.gpuTemperatureText(modelData)
                                 font.pixelSize: Appearance.font.pixelSize.huge
                                 font.weight: Font.Black
                                 color: modelData.temp > 80 ? Appearance.m3colors.m3error : Appearance.m3colors.m3onSurface
@@ -64,7 +64,7 @@ Item {
                     Item { Layout.fillHeight: true }
                     
                     StyledText {
-                        text: (modelData.driver && modelData.driver !== "undefined") ? "System is using " + modelData.driver + " driver." : "System GPU driver loaded."
+                        text: (modelData.driver && modelData.driver !== "undefined") ? "System is using " + modelData.driver + " driver." : "GPU detected; temperature sensor is not active."
                         font.pixelSize: Appearance.font.pixelSize.smaller
                         color: Appearance.m3colors.m3onSurface
                         font.italic: true
