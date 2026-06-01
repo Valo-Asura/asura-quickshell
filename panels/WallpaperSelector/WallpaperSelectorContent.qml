@@ -5,6 +5,7 @@ import "../../core/functions" as Functions
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Shapes
 import Qt.labs.folderlistmodel
 import Qt5Compat.GraphicalEffects
 import Quickshell
@@ -71,6 +72,7 @@ Item {
     
     // Sorting state
     property string sortMode: "name_asc" // name_asc, name_desc
+    property bool hexMode: true
     
     // Internal lock to prevent recursion during switching
     property bool _switchingMode: false
@@ -360,6 +362,36 @@ Item {
                         }
                     }
 
+                    Item {
+                        id: hexViewBtnContainer
+                        Layout.preferredWidth: 44 * Appearance.effectiveScale
+                        Layout.preferredHeight: 44 * Appearance.effectiveScale
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: -12 * Appearance.effectiveScale
+                        visible: !mainSelector.liveMode
+
+                        RippleButton {
+                            id: hexViewBtn
+                            anchors.fill: parent
+                            buttonRadius: 8 * Appearance.effectiveScale
+                            toggled: mainSelector.hexMode
+                            colBackground: toggled ? Appearance.m3colors.m3primaryContainer : "transparent"
+                            colBackgroundHover: toggled ? Appearance.m3colors.m3primaryContainer : Appearance.colors.colLayer1Hover
+                            onClicked: mainSelector.hexMode = !mainSelector.hexMode
+
+                            MaterialShapeWrappedMaterialSymbol {
+                                anchors.centerIn: parent
+                                implicitSize: 42 * Appearance.effectiveScale
+                                shapeString: "Sunny"
+                                color: hexViewBtn.toggled ? Appearance.m3colors.m3primaryContainer : Appearance.colors.colSecondary
+                                colSymbol: hexViewBtn.toggled ? Appearance.m3colors.m3onPrimaryContainer : Appearance.colors.colOnSecondary
+                                text: "hexagon"
+                                iconSize: 20 * Appearance.effectiveScale
+                            }
+                            StyledToolTip { text: mainSelector.hexMode ? "Hex wallpaper view" : "Card wallpaper view" }
+                        }
+                    }
+
                     Item { Layout.fillWidth: true }
 
                     RippleButton {
@@ -640,8 +672,10 @@ Item {
                         id: grid
                         anchors.fill: parent
                         anchors.margins: 20 * Appearance.effectiveScale
-                        cellWidth: width / (mainSelector.showDetails ? 3 : 4)
-                        cellHeight: cellWidth * 9/16 + (40 * Appearance.effectiveScale)
+                        cellWidth: width / (mainSelector.showDetails ? 3 : (mainSelector.hexMode ? 5 : 4))
+                        cellHeight: mainSelector.hexMode && !mainSelector.liveMode
+                            ? cellWidth * 0.92
+                            : cellWidth * 9/16 + (40 * Appearance.effectiveScale)
                         clip: true; interactive: true
                         
                         // Memory optimization: Load only what's necessary (about 1.5 extra screen heights)
@@ -730,6 +764,7 @@ Item {
                             readonly property string currentFilePath: delegateRoot.inWallhavenMode ? (model.full || "") : (delegateRoot.inFavMode ? (model.filePath || "") : (delegateRoot.inLiveMode ? (model.folder || "") : (filePath || "")))
                             readonly property string currentFileName: delegateRoot.inWallhavenMode ? ("wallhaven-" + (model.id || "")) : (delegateRoot.inFavMode ? (model.fileName || "") : (delegateRoot.inLiveMode ? (model.title || "") : (fileName || "")))
                             readonly property string previewPath: (delegateRoot.inWallhavenMode || delegateRoot.inLiveMode) ? (model.preview || "") : ("file://" + currentFilePath)
+                            readonly property bool useHexTile: delegateRoot.selector.hexMode && !delegateRoot.inLiveMode
                             
                             readonly property bool isSelected: delegateRoot.selector.selectedWallpaper !== null && (delegateRoot.inLiveMode ? delegateRoot.selector.selectedWallpaper.id === model.id : delegateRoot.selector.selectedWallpaper.filePath === currentFilePath)
                             
@@ -754,13 +789,51 @@ Item {
                                     Layout.fillWidth: true; Layout.fillHeight: true
                                     Rectangle {
                                         id: imgPlate
-                                        anchors.fill: parent; radius: 18 * Appearance.effectiveScale; color: Appearance.colors.colLayer2
+                                        anchors.fill: parent
+                                        anchors.leftMargin: delegateRoot.useHexTile ? 8 * Appearance.effectiveScale : 0
+                                        anchors.rightMargin: delegateRoot.useHexTile ? 8 * Appearance.effectiveScale : 0
+                                        anchors.topMargin: delegateRoot.useHexTile ? 0 : 0
+                                        anchors.bottomMargin: delegateRoot.useHexTile ? 0 : 0
+                                        radius: delegateRoot.useHexTile ? 0 : 18 * Appearance.effectiveScale
+                                        color: Appearance.colors.colLayer2
                                         layer.enabled: true
                                         layer.effect: OpacityMask {
-                                            maskSource: Rectangle { width: imgPlate.width; height: imgPlate.height; radius: 18 * Appearance.effectiveScale }
+                                            maskSource: delegateRoot.useHexTile ? hexMask : roundedMask
                                         }
 
                                         HoverHandler { id: imgHover }
+
+                                        Rectangle {
+                                            id: roundedMask
+                                            visible: false
+                                            width: imgPlate.width
+                                            height: imgPlate.height
+                                            radius: 18 * Appearance.effectiveScale
+                                            color: "white"
+                                        }
+
+                                        Item {
+                                            id: hexMask
+                                            visible: false
+                                            width: imgPlate.width
+                                            height: imgPlate.height
+                                            Shape {
+                                                anchors.fill: parent
+                                                antialiasing: true
+                                                preferredRendererType: Shape.CurveRenderer
+                                                ShapePath {
+                                                    fillColor: "white"
+                                                    strokeColor: "transparent"
+                                                    startX: hexMask.width * 0.24; startY: 0
+                                                    PathLine { x: hexMask.width * 0.76; y: 0 }
+                                                    PathLine { x: hexMask.width; y: hexMask.height * 0.5 }
+                                                    PathLine { x: hexMask.width * 0.76; y: hexMask.height }
+                                                    PathLine { x: hexMask.width * 0.24; y: hexMask.height }
+                                                    PathLine { x: 0; y: hexMask.height * 0.5 }
+                                                    PathLine { x: hexMask.width * 0.24; y: 0 }
+                                                }
+                                            }
+                                        }
 
                                         ThumbnailImage {
                                             anchors.fill: parent
@@ -781,7 +854,29 @@ Item {
                                             border.color: Appearance.colors.colPrimary
                                             radius: 18 * Appearance.effectiveScale
                                             color: "transparent"
-                                            visible: delegateRoot.isSelected
+                                            visible: delegateRoot.isSelected && !delegateRoot.useHexTile
+                                        }
+
+                                        Shape {
+                                            anchors.fill: parent
+                                            visible: delegateRoot.useHexTile
+                                            antialiasing: true
+                                            preferredRendererType: Shape.CurveRenderer
+                                            z: 8
+                                            ShapePath {
+                                                fillColor: "transparent"
+                                                strokeColor: delegateRoot.isSelected
+                                                    ? Appearance.colors.colPrimary
+                                                    : (mArea.containsMouse || imgHover.hovered ? Appearance.colors.colSecondary : Functions.ColorUtils.applyAlpha(Appearance.m3colors.m3onSurface, 0.22))
+                                                strokeWidth: (delegateRoot.isSelected ? 3 : 1.2) * Appearance.effectiveScale
+                                                startX: imgPlate.width * 0.24; startY: 0
+                                                PathLine { x: imgPlate.width * 0.76; y: 0 }
+                                                PathLine { x: imgPlate.width; y: imgPlate.height * 0.5 }
+                                                PathLine { x: imgPlate.width * 0.76; y: imgPlate.height }
+                                                PathLine { x: imgPlate.width * 0.24; y: imgPlate.height }
+                                                PathLine { x: 0; y: imgPlate.height * 0.5 }
+                                                PathLine { x: imgPlate.width * 0.24; y: 0 }
+                                            }
                                         }
                                         
                                         Rectangle {
@@ -895,7 +990,11 @@ Item {
                                     }
                                 }
                                 StyledText {
-                                    Layout.fillWidth: true; text: currentFileName; horizontalAlignment: Text.AlignHCenter
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: delegateRoot.useHexTile ? 0 : implicitHeight
+                                    visible: !delegateRoot.useHexTile
+                                    text: currentFileName
+                                    horizontalAlignment: Text.AlignHCenter
                                     font.pixelSize: Appearance.font.pixelSize.smallest; elide: Text.ElideRight; color: Appearance.colors.colOnLayer1; opacity: 0.7
                                 }
                             }

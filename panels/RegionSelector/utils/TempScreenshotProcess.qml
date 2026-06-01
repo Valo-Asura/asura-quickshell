@@ -10,5 +10,5 @@ Process {
     property string screenshotDir: Directories.screenshotTemp
     required property ShellScreen screen
     property string screenshotPath: `${screenshotDir}/image-${screen.name}`
-    command: ["bash", "-c", `mkdir -p '${Functions.StringUtils.shellSingleQuoteEscape(screenshotDir)}' && grim -o '${Functions.StringUtils.shellSingleQuoteEscape(screen.name)}' '${Functions.StringUtils.shellSingleQuoteEscape(screenshotPath)}'`]
+    command: [Directories.home.replace("file://", "") + "/.local/bin/hyprcapture", "output", screen.name, "--path", screenshotPath]
 }

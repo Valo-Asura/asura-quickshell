@@ -91,6 +91,21 @@ ShellRoot {
         }
     }
 
+    IpcHandler {
+        target: "quickwallpaper"
+        function open() {
+            GlobalStates.wallpaperSelectorTarget = "desktop";
+            GlobalStates.wallpaperSelectorOpen = true;
+        }
+        function close() {
+            GlobalStates.wallpaperSelectorOpen = false;
+        }
+        function toggle() {
+            GlobalStates.wallpaperSelectorTarget = "desktop";
+            GlobalStates.wallpaperSelectorOpen = !GlobalStates.wallpaperSelectorOpen;
+        }
+    }
+
     // ── Phase 7: OSD ──
     OSD {}
 

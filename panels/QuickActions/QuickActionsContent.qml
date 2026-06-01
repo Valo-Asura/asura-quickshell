@@ -122,14 +122,9 @@ FocusScope {
                     const tempDir = Functions.FileUtils.trimFileProtocol(Directories.screenshotTemp);
                     const tempPath = `${tempDir}/full-${Date.now()}.png`;
                     
-                    const copyCmd = autoCopy ? ` | tee >(wl-copy)` : "";
-                    let bashCmd = "";
-                    
-                    if (autoSave) {
-                        bashCmd = `mkdir -p "${tempDir}" && mkdir -p "${finalSaveDir}" && grim - | tee "${tempPath}" ${copyCmd} > "${finalSaveDir}/Screenshot_$(date +%Y-%m-%d-%H-%M-%S).png"`;
-                    } else {
-                        bashCmd = `mkdir -p "${tempDir}" && grim - | tee "${tempPath}" ${copyCmd} > /dev/null`;
-                    }
+                    const saveArg = autoSave ? `--save-dir "${finalSaveDir}"` : "";
+                    const copyArg = autoCopy ? "--copy" : "";
+                    const bashCmd = `mkdir -p "${tempDir}" && "$HOME/.local/bin/hyprcapture" full --path "${tempPath}" ${saveArg} ${copyArg}`;
                     
                     root.pendingFullScreenshotPath = tempPath;
                     fullScreenshotProc.command = ["bash", "-c", bashCmd];

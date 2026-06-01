@@ -327,7 +327,7 @@ Rectangle {
                         xOffset: Math.round((standardOverviewRoot.workspaceImplicitWidth + workspacePadding + workspaceSpacing) * workspaceColIndex + workspacePadding / 2)
                         yOffset: Math.round((standardOverviewRoot.workspaceImplicitHeight + workspacePadding + workspaceSpacing) * workspaceRowIndex + workspacePadding / 2)
                         onDragStarted: standardOverviewRoot.draggingFromWorkspace = windowData?.workspace.id || -1
-                        onDragFinished: targetWorkspace => { standardOverviewRoot.draggingFromWorkspace = -1; if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) Hyprland.dispatch(HyprlandCompat.dspMoveToWsSilent(targetWorkspace, `address:${windowData?.address}`)); }
+                        onDragFinished: targetWorkspace => { standardOverviewRoot.draggingFromWorkspace = -1; }
                         onWindowClicked: { GlobalStates.closeAllPanels(); Qt.callLater(() => { Hyprland.dispatch(HyprlandCompat.dspFocusWindow(`address:${windowData.address}`)); }); }
                         onWindowClosed: { Hyprland.dispatch(HyprlandCompat.dspClose(`address:${windowData.address}`)); }
                     }
