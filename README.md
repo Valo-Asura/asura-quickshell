@@ -2,6 +2,9 @@
 
 Standalone public backup of the `nandoroid` shell configuration for Hyprland/CachyOS.
 
+> [!WARNING]
+> This repository is highly experimental and unstable. Significant portions of the config were tuned directly on a live system, meaning some features may be incomplete, machine-specific, or broken outside this setup. Use as a reference/backup, not as a polished drop-in shell.
+
 ## Screenshots
 
 ![Launcher](screenshots/launcher.png)
@@ -38,3 +41,7 @@ quickshell -c nandoroid
 - `Super + I`: Settings Sidebar
 - `Super + W`: System Monitor
 - `Super + V`: Clipboard History
+
+## Credits
+
+Thanks to [na-ive](https://github.com/na-ive) for making Nandoroid, which this setup is based on.
