@@ -51,9 +51,6 @@ StyledFlickable {
         // ── Date & Time ── (first, like Android)
         SysDateTime { Layout.fillWidth: true }
 
-        // ── Language ── (second, like Android)
-        SysLanguage { Layout.fillWidth: true }
-
         // ── Screenshot & Screen Record ──
         SysScreenshot { Layout.fillWidth: true }
 

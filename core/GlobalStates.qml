@@ -22,6 +22,7 @@ Singleton {
     property bool quickActionsOpen: false
     property bool sessionOpen: false
     property bool quickSettingsEditMode: false
+    property bool quickWallpaperOpen: false
     property bool wallpaperSelectorOpen: false
     property bool launcherOpen: false
     property bool spotlightOpen: false
@@ -115,6 +116,7 @@ Singleton {
             accentPickerOpen = false
             quickSettingsOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             dashboardOpen = false
@@ -129,6 +131,7 @@ Singleton {
             accentPickerOpen = false
             notificationCenterOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             dashboardOpen = false
@@ -143,6 +146,7 @@ Singleton {
             accentPickerOpen = false
             notificationCenterOpen = false
             quickSettingsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             dashboardOpen = false
@@ -152,11 +156,34 @@ Singleton {
         }
     }
 
+    onQuickWallpaperOpenChanged: {
+        if (quickWallpaperOpen) {
+            accentPickerOpen = false
+            notificationCenterOpen = false
+            quickSettingsOpen = false
+            quickActionsOpen = false
+            launcherOpen = false
+            spotlightOpen = false
+            settingsOpen = false
+            dashboardOpen = false
+            systemMonitorOpen = false
+            sessionOpen = false
+            wallpaperSelectorOpen = false
+        }
+    }
+
+    onWallpaperSelectorOpenChanged: {
+        if (wallpaperSelectorOpen) {
+            quickWallpaperOpen = false
+        }
+    }
+
     onLauncherOpenChanged: {
         if (launcherOpen) {
             accentPickerOpen = false
             notificationCenterOpen = false
             quickSettingsOpen = false
+            quickWallpaperOpen = false
             spotlightOpen = false
             dashboardOpen = false
             sessionOpen = false
@@ -168,6 +195,7 @@ Singleton {
             notificationCenterOpen = false
             quickSettingsOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             dashboardOpen = false
@@ -181,6 +209,7 @@ Singleton {
             notificationCenterOpen = false
             quickSettingsOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             sessionOpen = false
@@ -194,6 +223,7 @@ Singleton {
             notificationCenterOpen = false
             quickSettingsOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             dashboardOpen = false
@@ -207,6 +237,7 @@ Singleton {
             notificationCenterOpen = false
             quickSettingsOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             dashboardOpen = false
             sessionOpen = false
@@ -219,6 +250,7 @@ Singleton {
             notificationCenterOpen = false
             quickSettingsOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             dashboardOpen = false
@@ -236,6 +268,7 @@ Singleton {
             notificationCenterOpen = false
             quickSettingsOpen = false
             quickActionsOpen = false
+            quickWallpaperOpen = false
             launcherOpen = false
             spotlightOpen = false
             dashboardOpen = false
@@ -250,6 +283,7 @@ Singleton {
         notificationCenterOpen = false
         quickSettingsOpen = false
         quickActionsOpen = false
+        quickWallpaperOpen = false
         launcherOpen = false
         spotlightOpen = false
         settingsOpen = false

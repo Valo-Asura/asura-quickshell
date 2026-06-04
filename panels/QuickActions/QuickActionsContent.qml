@@ -120,13 +120,9 @@ FocusScope {
                     const rawSaveDir = (Config.ready && Config.options.screenshot) ? Config.options.screenshot.savePath : "~/Pictures/Screenshots";
                     const finalSaveDir = Functions.FileUtils.trimFileProtocol(rawSaveDir);
                     const tempDir = Functions.FileUtils.trimFileProtocol(Directories.screenshotTemp);
-                    const tempPath = `${tempDir}/full-${Date.now()}.png`;
+                    const bashCmd = `mkdir -p "${tempDir}" "${finalSaveDir}" && "$HOME/.local/bin/hyprcapture" quick fullscreen`;
                     
-                    const saveArg = autoSave ? `--save-dir "${finalSaveDir}"` : "";
-                    const copyArg = autoCopy ? "--copy" : "";
-                    const bashCmd = `mkdir -p "${tempDir}" && "$HOME/.local/bin/hyprcapture" full --path "${tempPath}" ${saveArg} ${copyArg}`;
-                    
-                    root.pendingFullScreenshotPath = tempPath;
+                    root.pendingFullScreenshotPath = "";
                     fullScreenshotProc.command = ["bash", "-c", bashCmd];
                     fullScreenshotProc.running = true;
                 });

@@ -21,7 +21,7 @@
   "utilities": [
     { "name": "xdg-desktop-portal-hyprland", "command": "/usr/lib/xdg-desktop-portal-hyprland", "description": "Screen sharing support" },
     { "name": "xdg-desktop-portal-gtk", "command": "/usr/lib/xdg-desktop-portal-gtk", "description": "File picker support" },
-    { "name": "hyprcapture", "command": "/home/asura/.local/bin/hyprcapture", "description": "Hyprland capture wrapper" },
+    { "name": "HyprCapture", "command": "/home/asura/.local/bin/hyprcapture-ui", "description": "Hyprland screenshot plugin helper" },
     { "name": "grim", "command": "grim", "description": "Capture backend" },
     { "name": "slurp", "command": "slurp", "description": "Region selection backend" },
     { "name": "wf-recorder", "command": "wf-recorder", "description": "Screen recording" },
@@ -52,7 +52,7 @@
     { "name": "noto-fonts-cjk", "command": "fc-list", "description": "CJK Font (Japanese, Chinese, Korean)" }
   ],
   "livewallpaper": [
-    { "name": "linux-wallpaperengine-git", "command": "linux-wallpaperengine", "description": "Steam Wallpaper Engine support" }
+    { "name": "mpvpaper", "command": "mpvpaper", "description": "Local video wallpaper support" }
   ],
   "optional": [
     { "name": "kitty", "command": "kitty", "description": "Terminal emulator" },

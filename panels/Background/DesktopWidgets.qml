@@ -79,9 +79,9 @@ Variants {
             let currentWsId = HyprlandData.activeWorkspace ? HyprlandData.activeWorkspace.id : -1;
             let windowsOnWs = HyprlandData.hyprlandClientsForWorkspace(currentWsId);
             
-            // Ignore wallpaper engine and other shell-related windows
-            const ignoreClasses = ["linux-wallpaperengine", "Quickshell", "waybar", "ags", "fuzzel", "com.github.casainho.linux-wallpaperengine"];
-            const ignoreTitles = ["linux-wallpaperengine", "Wallpaper Engine"];
+            // Ignore live wallpaper and other shell-related windows.
+            const ignoreClasses = ["mpvpaper", "Quickshell", "waybar", "ags", "fuzzel"];
+            const ignoreTitles = ["mpvpaper"];
             
             let realWindows = windowsOnWs.filter(win => {
                 if (!win.mapped || win.class === "") return false;

@@ -26,20 +26,24 @@ Item {
         chargingSweep = chargingActive ? -0.35 : -0.35;
     }
 
-    SequentialAnimation on chargingPulse {
+    Timer {
+        id: chargePulseTimer
+        interval: 620
         running: root.chargingActive
-        loops: Animation.Infinite
-        NumberAnimation { to: 1.0; duration: 560; easing.type: Easing.InOutSine }
-        NumberAnimation { to: 0.25; duration: 560; easing.type: Easing.InOutSine }
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.chargingPulse = root.chargingPulse >= 0.9 ? 0.28 : 1.0
+        onRunningChanged: if (!running) root.chargingPulse = 0
     }
 
-    NumberAnimation on chargingSweep {
+    Timer {
+        id: chargeSweepTimer
+        interval: 360
         running: root.chargingActive
-        loops: Animation.Infinite
-        from: -0.35
-        to: 1.35
-        duration: 1250
-        easing.type: Easing.InOutSine
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.chargingSweep = root.chargingSweep >= 1.25 ? -0.35 : root.chargingSweep + 0.34
+        onRunningChanged: if (!running) root.chargingSweep = -0.35
     }
 
     implicitWidth: 35 * Appearance.effectiveScale

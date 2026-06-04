@@ -48,12 +48,11 @@ Singleton {
     }
 
     function selectRandomFavorite() {
-        // Filter favorites to include only static images and exclude Wallpaper Engine paths
+        // Filter favorites to include only static images and exclude live video paths.
         const staticFavs = favorites.filter(path => {
             const p = path.toLowerCase();
             const isImage = p.endsWith(".jpg") || p.endsWith(".jpeg") || p.endsWith(".png") || p.endsWith(".webp") || p.endsWith(".avif");
-            const isWE = p.includes("431960"); // Steam Workshop ID for Wallpaper Engine
-            return isImage && !isWE;
+            return isImage;
         });
 
         if (staticFavs.length > 0) {
@@ -198,6 +197,21 @@ Singleton {
             Config.options.lock.wallpaperPath = "file://" + cleanPath
         }
         
+        // Write to hyprpaper.conf for persistence across reboots
+        const confPath = Directories.home.replace("file://", "") + "/.config/hypr/hyprpaper.conf"
+        const confContent = `preload = ${cleanPath}\nwallpaper = ,${cleanPath}\n`
+        Quickshell.execDetached(["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", confContent, confPath])
+        
+        // Ensure hyprpaper is running and set the wallpaper dynamically
+        const applyCmd = `
+            pgrep -x hyprpaper || hyprpaper &
+            sleep 0.2
+            hyprctl hyprpaper preload "${cleanPath}"
+            hyprctl hyprpaper wallpaper ",${cleanPath}"
+            hyprctl hyprpaper unload all
+        `
+        Quickshell.execDetached(["bash", "-c", applyCmd])
+
         if (Config.options.appearance.background.matugen) {
             // When selecting a static wallpaper, we use the cleanPath directly 
             // but we can also use getWallpaperPath which will return the new wallpaperPath since WE is not active
@@ -450,6 +464,25 @@ Singleton {
                 root.applyColor(bg.matugenCustomColor);
             } else {
                 root.applyTheme("mocha.json");
+            }
+        }
+
+        // Apply wallpaper with hyprpaper on startup
+        if (!WallpaperEngineService.active && bg.wallpaperPath && bg.wallpaperPath !== "") {
+            const cleanPath = bg.wallpaperPath.toString().startsWith("file://") ? bg.wallpaperPath.toString().substring(7) : bg.wallpaperPath.toString();
+            if (cleanPath !== "") {
+                const confPath = Directories.home.replace("file://", "") + "/.config/hypr/hyprpaper.conf"
+                const confContent = `preload = ${cleanPath}\nwallpaper = ,${cleanPath}\n`
+                Quickshell.execDetached(["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", confContent, confPath])
+
+                const initCmd = `
+                    pgrep -x hyprpaper || hyprpaper &
+                    sleep 0.2
+                    hyprctl hyprpaper preload "${cleanPath}"
+                    hyprctl hyprpaper wallpaper ",${cleanPath}"
+                    hyprctl hyprpaper unload all
+                `
+                Quickshell.execDetached(["bash", "-c", initCmd])
             }
         }
 

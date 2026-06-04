@@ -50,7 +50,6 @@ Item {
             // System Page components (pageIndex: 5)
             { file: "panels/Settings/pages/System/SystemSettings.qml", pageIndex: 5 },
             { file: "panels/Settings/pages/System/SysDateTime.qml", pageIndex: 5 },
-            { file: "panels/Settings/pages/System/SysLanguage.qml", pageIndex: 5 },
             { file: "panels/Settings/pages/System/SysScreenshot.qml", pageIndex: 5 },
             { file: "panels/Settings/pages/System/SysPerformance.qml", pageIndex: 5 },
             { file: "panels/Settings/pages/System/SysPower.qml", pageIndex: 5 },

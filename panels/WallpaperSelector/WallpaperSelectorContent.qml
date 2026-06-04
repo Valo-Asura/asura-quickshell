@@ -2,6 +2,7 @@ import "../../core"
 import "../../services"
 import "../../widgets"
 import "../../core/functions" as Functions
+import "../QuickWallpaper"
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -25,6 +26,29 @@ Item {
         id: customFoldersModel
     }
 
+    ListModel {
+        id: favModel
+        function refresh() {
+            clear();
+            const favs = Wallpapers.favorites;
+            let data = [];
+            for (let i = 0; i < favs.length; i++) {
+                const path = favs[i];
+                const name = path.split('/').pop();
+                data.push({ "filePath": path, "fileName": name });
+            }
+
+            data.sort((a, b) => {
+                if (mainSelector.sortMode === "name_asc") return a.fileName.localeCompare(b.fileName);
+                if (mainSelector.sortMode === "name_desc") return b.fileName.localeCompare(a.fileName);
+                return 0;
+            });
+
+            for (let item of data) append(item);
+        }
+        Component.onCompleted: refresh()
+    }
+
     function refreshCustomFolders() {
         customFoldersModel.clear();
         const folders = Config.options.appearance.background.customFolders || [];
@@ -43,6 +67,7 @@ Item {
     Connections {
         target: Wallpapers
         function onCustomFoldersChanged() { mainSelector.refreshCustomFolders(); }
+        function onFavoritesChanged() { favModel.refresh(); }
     }
 
     // Responsive sizing
@@ -72,7 +97,7 @@ Item {
     
     // Sorting state
     property string sortMode: "name_asc" // name_asc, name_desc
-    property bool hexMode: true
+    property bool hexMode: false
     
     // Internal lock to prevent recursion during switching
     property bool _switchingMode: false
@@ -170,7 +195,7 @@ Item {
         mainSelector.closed()
     }
     function selectWallpaper(path) {
-        // Stop Wallpaper Engine if switching to static on desktop
+        // Stop live video playback if switching to static on desktop.
         if (GlobalStates.wallpaperSelectorTarget === "desktop") {
             WallpaperEngineService.stop();
             Wallpapers.select(path)
@@ -332,14 +357,14 @@ Item {
                         }
                     }
 
-                    // Global Wallpaper Engine Settings Button
+                    // Global live wallpaper settings button
                     Item {
                         id: weSettingsBtnContainer
                         Layout.preferredWidth: 44 * Appearance.effectiveScale
                         Layout.preferredHeight: 44 * Appearance.effectiveScale
                         Layout.alignment: Qt.AlignVCenter
                         Layout.leftMargin: -12 * Appearance.effectiveScale 
-                        visible: mainSelector.liveMode
+                        visible: false
 
                         RippleButton {
                             id: weSettingsBtn
@@ -358,7 +383,7 @@ Item {
                                 iconSize: 20 * Appearance.effectiveScale
                                 rotation: weSettingsPopup.visible ? 45 : 0
                             }
-                            StyledToolTip { text: "Global Engine Settings" }
+                            StyledToolTip { text: "Live wallpaper settings" }
                         }
                     }
 
@@ -368,7 +393,7 @@ Item {
                         Layout.preferredHeight: 44 * Appearance.effectiveScale
                         Layout.alignment: Qt.AlignVCenter
                         Layout.leftMargin: -12 * Appearance.effectiveScale
-                        visible: !mainSelector.liveMode
+                        visible: false
 
                         RippleButton {
                             id: hexViewBtn
@@ -431,7 +456,7 @@ Item {
                                 width: sidebarScroll.availableWidth
                                 spacing: 4 * Appearance.effectiveScale
 
-                                // --- Live Wallpaper (Engine) ---
+                                // --- Live Wallpaper (local video) ---
                                 RippleButton {
                                     id: liveSideBtn
                                     width: parent.width
@@ -462,11 +487,9 @@ Item {
                                     StyledToolTip {
                                         text: {
                                             if (GameMode.active) return "Live wallpapers cannot be changed while Game Mode is active";
-                                            if (!WallpaperEngineService.isInstalled) return "linux-wallpaperengine not found";
-                                            if (!WallpaperEngineService.hasRuntimeAssets) return WallpaperEngineService.statusMessage;
-                                            if (!WallpaperEngineService.hasWorkshopWallpapers) return WallpaperEngineService.statusMessage;
+                                            if (!WallpaperEngineService.isInstalled) return WallpaperEngineService.statusMessage;
                                             if (GlobalStates.wallpaperSelectorTarget !== "desktop") return "Live wallpapers only supported on desktop";
-                                            return "Browse Wallpaper Engine collection";
+                                            return "Browse local video wallpapers";
                                         }
                                     }
                                 }
@@ -668,8 +691,144 @@ Item {
                     clip: true
                     opacity: 0.98
 
+                    ListView {
+                        id: skwdSliceView
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width - 40 * Appearance.effectiveScale, 1040 * Appearance.effectiveScale)
+                        height: Math.min(parent.height - 90 * Appearance.effectiveScale, 440 * Appearance.effectiveScale)
+                        visible: !mainSelector.wallhavenMode
+                        orientation: ListView.Horizontal
+                        model: mainSelector.favMode ? favModel : (mainSelector.liveMode ? WallpaperEngineService.results : Wallpapers.folderModel)
+                        spacing: -30 * Appearance.effectiveScale
+                        clip: false
+                        cacheBuffer: Math.max(0, width * 2)
+                        boundsBehavior: Flickable.DragAndOvershootBounds
+                        highlightRangeMode: ListView.StrictlyEnforceRange
+                        preferredHighlightBegin: width / 2 - expandedCardWidth / 2
+                        preferredHighlightEnd: width / 2 + expandedCardWidth / 2
+                        snapMode: ListView.SnapOneItem
+
+                        readonly property real expandedCardWidth: Math.min(width * 0.56, 600 * Appearance.effectiveScale)
+                        readonly property real sliceCardWidth: Math.max(88 * Appearance.effectiveScale, Math.min(128 * Appearance.effectiveScale, width * 0.12))
+                        readonly property real skewOffset: 34 * Appearance.effectiveScale
+
+                        onVisibleChanged: {
+                            if (visible) {
+                                favModel.refresh();
+                                Qt.callLater(() => {
+                                    currentIndex = Math.min(currentIndex, Math.max(0, count - 1));
+                                    if (count > 0) positionViewAtIndex(currentIndex, ListView.Center);
+                                });
+                            }
+                        }
+
+                        onCountChanged: {
+                            if (count <= 0) {
+                                currentIndex = 0;
+                                return;
+                            }
+                            if (currentIndex >= count) currentIndex = count - 1;
+                            Qt.callLater(() => positionViewAtIndex(currentIndex, ListView.Center));
+                        }
+
+                        WheelHandler {
+                            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                            property real wheelAccumulator: 0
+                            onWheel: event => {
+                                const delta = event.angleDelta.y !== 0 ? event.angleDelta.y : (event.pixelDelta.y !== 0 ? event.pixelDelta.y : event.angleDelta.x);
+                                if (delta === 0) return;
+                                wheelAccumulator += delta;
+                                const threshold = 110;
+                                while (Math.abs(wheelAccumulator) >= threshold) {
+                                    const next = Math.max(0, Math.min(skwdSliceView.count - 1, skwdSliceView.currentIndex + (wheelAccumulator > 0 ? -1 : 1)));
+                                    skwdSliceView.currentIndex = next;
+                                    skwdSliceView.positionViewAtIndex(next, ListView.Center);
+                                    wheelAccumulator += wheelAccumulator > 0 ? -threshold : threshold;
+                                }
+                                event.accepted = true;
+                            }
+                        }
+
+                        delegate: QuickWallpaperSlice {
+                            readonly property int distance: Math.abs(index - skwdSliceView.currentIndex)
+                            readonly property string currentFilePath: mainSelector.liveMode
+                                ? ((typeof folder !== "undefined" && folder !== "") ? folder : ((typeof path !== "undefined" && path !== "") ? path : (model.folder || model.path || "")))
+                                : (typeof filePath !== "undefined" ? filePath : (model.filePath || ""))
+                            readonly property string currentFileName: mainSelector.liveMode
+                                ? ((typeof title !== "undefined" && title !== "") ? title : ((typeof fileName !== "undefined" && fileName !== "") ? fileName : (model.title || model.fileName || "")))
+                                : (typeof fileName !== "undefined" ? fileName : (model.fileName || ""))
+                            readonly property string currentPreview: mainSelector.liveMode
+                                ? ((typeof preview !== "undefined" && preview !== "") ? preview : (model.preview || ""))
+                                : (currentFilePath === "" ? "" : "file://" + currentFilePath)
+
+                            itemIndex: index
+                            current: ListView.isCurrentItem
+                            selected: mainSelector.liveMode
+                                ? (Config.ready && Config.options.appearance.background.liveWallpaperPath === currentFilePath)
+                                : Wallpapers.getWallpaperPath("desktop") === "file://" + currentFilePath
+                            title: currentFileName
+                            path: currentFilePath
+                            preview: currentPreview
+                            typeLabel: mainSelector.liveMode ? "VID" : "PIC"
+                            expandedWidth: skwdSliceView.expandedCardWidth
+                            sliceWidth: skwdSliceView.sliceCardWidth
+                            sliceHeight: skwdSliceView.height
+                            skewOffset: skwdSliceView.skewOffset
+                            accent: Appearance.colors.colPrimary
+                            surface: Appearance.colors.colLayer1
+                            dimmed: distance > 5
+                            y: current ? 0 : 22 * Appearance.effectiveScale + Math.min(distance, 3) * 5 * Appearance.effectiveScale
+                            Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+
+                            onSelectedRequested: {
+                                skwdSliceView.currentIndex = index;
+                                skwdSliceView.positionViewAtIndex(index, ListView.Center);
+                                if (mainSelector.liveMode) {
+                                    mainSelector.selectedWallpaper = {
+                                        "id": (typeof id !== "undefined" ? id : model.id),
+                                        "title": currentFileName,
+                                        "folder": currentFilePath,
+                                        "preview": currentPreview
+                                    };
+                                }
+                            }
+
+                            onActivated: {
+                                if (mainSelector.liveMode) {
+                                    WallpaperEngineService.apply(currentFilePath, currentPreview);
+                                    mainSelector.close();
+                                } else if (currentFilePath !== "") {
+                                    mainSelector.selectWallpaper("file://" + currentFilePath);
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 22 * Appearance.effectiveScale
+                        width: Math.min(parent.width - 72 * Appearance.effectiveScale, 420 * Appearance.effectiveScale)
+                        height: 36 * Appearance.effectiveScale
+                        radius: 18 * Appearance.effectiveScale
+                        visible: skwdSliceView.visible
+                        color: Functions.ColorUtils.applyAlpha(Appearance.colors.colLayer0, 0.66)
+                        border.width: Math.max(1, 1 * Appearance.effectiveScale)
+                        border.color: Functions.ColorUtils.applyAlpha(Appearance.colors.colOutlineVariant, 0.35)
+
+                        StyledText {
+                            anchors.centerIn: parent
+                            text: skwdSliceView.count > 0
+                                ? ((skwdSliceView.currentIndex + 1) + " / " + skwdSliceView.count + "  " + (mainSelector.liveMode ? "local videos" : (mainSelector.favMode ? "favourites" : "pictures")))
+                                : (mainSelector.liveMode && WallpaperEngineService.loading ? "Scanning local videos" : "No wallpapers found")
+                            color: Appearance.colors.colSubtext
+                            font.pixelSize: Appearance.font.pixelSize.small
+                        }
+                    }
+
                     GridView {
                         id: grid
+                        visible: mainSelector.wallhavenMode
                         anchors.fill: parent
                         anchors.margins: 20 * Appearance.effectiveScale
                         cellWidth: width / (mainSelector.showDetails ? 3 : (mainSelector.hexMode ? 5 : 4))
@@ -720,37 +879,6 @@ Item {
                             }
                         }
 
-                        ListModel {
-                            id: favModel
-                            function refresh() {
-                                clear();
-                                const favs = Wallpapers.favorites;
-                                let data = [];
-                                for (let i = 0; i < favs.length; i++) {
-                                    const path = favs[i];
-                                    const name = path.split('/').pop();
-                                    data.push({ "filePath": path, "fileName": name });
-                                }
-
-                                // Apply sorting
-                                data.sort((a, b) => {
-                                    if (mainSelector.sortMode === "name_asc") return a.fileName.localeCompare(b.fileName);
-                                    if (mainSelector.sortMode === "name_desc") return b.fileName.localeCompare(a.fileName);
-                                    return 0;
-                                });
-
-                                for (let item of data) append(item);
-                            }
-                            Component.onCompleted: refresh()
-                        }
-                        
-                        Connections {
-                            target: Wallpapers
-                            function onFavoritesChanged() { favModel.refresh(); }
-                        }
-                        
-                        onVisibleChanged: { if (visible) favModel.refresh(); }
-                        
                         delegate: Item {
                             id: delegateRoot
                             width: grid.cellWidth; height: grid.cellHeight
@@ -841,11 +969,11 @@ Item {
                                             visible: sourcePath !== ""
                                         }
 
-                                        AnimatedImage {
+                                        Image {
                                             anchors.fill: parent; source: (delegateRoot.inWallhavenMode || delegateRoot.inLiveMode) ? previewPath : ""
                                             fillMode: Image.PreserveAspectCrop
                                             visible: (delegateRoot.inWallhavenMode || delegateRoot.inLiveMode) && source != ""
-                                            asynchronous: true; cache: true; playing: true
+                                            asynchronous: true; cache: true
                                         }
 
                                         Rectangle {
@@ -1018,12 +1146,10 @@ Item {
                                         return "No online wallpapers found";
                                     }
                                     if (mainSelector.liveMode) {
-                                        if (!WallpaperEngineService.isInstalled) return "linux-wallpaperengine-git is required for this feature";
-                                        if (!WallpaperEngineService.hasRuntimeAssets) return WallpaperEngineService.statusMessage;
-                                        if (!WallpaperEngineService.hasWorkshopWallpapers && WallpaperEngineService.errorMessage !== "") return WallpaperEngineService.errorMessage;
+                                        if (!WallpaperEngineService.isInstalled) return "mpvpaper is required for local video wallpapers";
                                         if (WallpaperEngineService.errorMessage !== "") return WallpaperEngineService.errorMessage;
-                                        if (WallpaperEngineService.loading) return "Scanning Steam Workshop...";
-                                        return "No Wallpaper Engine wallpapers found";
+                                        if (WallpaperEngineService.loading) return "Scanning local video wallpapers...";
+                                        return "No local video wallpapers found";
                                     }
                                     return mainSelector.favMode ? "No favorite wallpapers" : "No wallpapers found";
                                 }
@@ -1076,12 +1202,11 @@ Item {
                                 maskSource: Rectangle { width: previewPlate.width; height: previewPlate.height; radius: 16 * Appearance.effectiveScale }
                             }
 
-                            AnimatedImage {
+                            Image {
                                 anchors.fill: parent
                                 source: mainSelector.selectedWallpaper ? mainSelector.selectedWallpaper.preview : ""
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
-                                playing: true
                                 cache: true
                             }
 
@@ -1341,7 +1466,7 @@ Item {
             }
         }
 
-        // --- Global Wallpaper Engine Settings Popup ---
+        // --- Global live wallpaper settings popup ---
         MouseArea {
             id: weSettingsOverlay
             anchors.fill: parent
@@ -1378,7 +1503,7 @@ Item {
                 spacing: 12 * Appearance.effectiveScale
                 
                 StyledText {
-                    text: "Global Engine Settings"
+                    text: "Live Wallpaper Settings"
                     font.pixelSize: 14 * Appearance.effectiveScale
                     font.weight: Font.DemiBold
                     color: Appearance.colors.colOnLayer1
@@ -1449,15 +1574,6 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        StyledText { text: "Disable Audio Processing"; font.pixelSize: 12 * Appearance.effectiveScale; color: Appearance.colors.colOnLayer1; Layout.fillWidth: true }
-                        AndroidToggle {
-                            checked: Config.ready ? Config.options.wallpaperEngine.disableAudioProcessing : false
-                            onToggled: if (Config.ready) Config.options.wallpaperEngine.disableAudioProcessing = !checked
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
                         StyledText { text: "Auto-Pause (Windows)"; font.pixelSize: 12 * Appearance.effectiveScale; color: Appearance.colors.colOnLayer1; Layout.fillWidth: true }
                         AndroidToggle {
                             checked: Config.ready ? Config.options.wallpaperEngine.autoPause : true
@@ -1465,41 +1581,6 @@ Item {
                         }
                     }
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        StyledText { text: "Disable Particles"; font.pixelSize: 12 * Appearance.effectiveScale; color: Appearance.colors.colOnLayer1; Layout.fillWidth: true }
-                        AndroidToggle {
-                            checked: Config.ready ? Config.options.wallpaperEngine.disableParticles : true
-                            onToggled: if (Config.ready) Config.options.wallpaperEngine.disableParticles = !checked
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        StyledText { text: "Disable Parallax"; font.pixelSize: 12 * Appearance.effectiveScale; color: Appearance.colors.colOnLayer1; Layout.fillWidth: true }
-                        AndroidToggle {
-                            checked: Config.ready ? Config.options.wallpaperEngine.disableParallax : false
-                            onToggled: if (Config.ready) Config.options.wallpaperEngine.disableParallax = !checked
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        StyledText { text: "Disable Mouse Interaction"; font.pixelSize: 12 * Appearance.effectiveScale; color: Appearance.colors.colOnLayer1; Layout.fillWidth: true }
-                        AndroidToggle {
-                            checked: Config.ready ? Config.options.wallpaperEngine.disableMouse : false
-                            onToggled: if (Config.ready) Config.options.wallpaperEngine.disableMouse = !checked
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        StyledText { text: "Disable PBO (Texture Fix)"; font.pixelSize: 12 * Appearance.effectiveScale; color: Appearance.colors.colOnLayer1; Layout.fillWidth: true }
-                        AndroidToggle {
-                            checked: Config.ready ? Config.options.wallpaperEngine.noPbo : true
-                            onToggled: if (Config.ready) Config.options.wallpaperEngine.noPbo = !checked
-                        }
-                    }
                 }
                 
                 Item { Layout.preferredHeight: 4 * Appearance.effectiveScale }

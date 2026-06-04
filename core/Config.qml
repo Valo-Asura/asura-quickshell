@@ -459,7 +459,7 @@ Singleton {
                 property bool autoCopy: true
             }
 
-            // --- Wallpaper Engine ---
+            // --- Live Wallpaper ---
             property JsonObject wallpaperEngine: JsonObject {
                 property int fps: 30
                 property int volume: 15

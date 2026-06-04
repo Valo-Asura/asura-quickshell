@@ -5,11 +5,13 @@ import Quickshell
 Singleton {
     id: root
     
-    function screenshot() { Quickshell.execDetached(["qs", "-c", "nandoroid", "ipc", "call", "region", "screenshot"]) }
+    readonly property string hyprcaptureCommand: Directories.home.replace("file://", "") + "/.local/bin/hyprcapture"
+
+    function screenshot() { Quickshell.execDetached([hyprcaptureCommand, "open", "region"]) }
     function search() { Quickshell.execDetached(["qs", "-c", "nandoroid", "ipc", "call", "region", "search"]) }
     function ocr() { Quickshell.execDetached(["qs", "-c", "nandoroid", "ipc", "call", "region", "ocr"]) }
-    function record() { Quickshell.execDetached(["qs", "-c", "nandoroid", "ipc", "call", "region", "record"]) }
-    function recordWithSound() { Quickshell.execDetached(["qs", "-c", "nandoroid", "ipc", "call", "region", "recordWithSound"]) }
-    function recordFullscreenWithSound() { Quickshell.execDetached(["qs", "-c", "nandoroid", "ipc", "call", "region", "recordFullscreenWithSound"]) }
+    function record() { Quickshell.execDetached([hyprcaptureCommand, "record", "region"]) }
+    function recordWithSound() { Quickshell.execDetached([hyprcaptureCommand, "record", "region"]) }
+    function recordFullscreenWithSound() { Quickshell.execDetached([hyprcaptureCommand, "record", "fullscreen"]) }
     function qrcode() { Quickshell.execDetached(["qs", "-c", "nandoroid", "ipc", "call", "region", "qrcode"]) }
 }

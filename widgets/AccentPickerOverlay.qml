@@ -52,7 +52,7 @@ PanelWindow {
                 return Config.options.appearance.background.wallpaperPath;
             }
 
-            // If picking for desktop, check for Wallpaper Engine
+            // If picking for desktop, use the live wallpaper preview when available.
             if (WallpaperEngineService.active && WallpaperEngineService.screenshotPath !== "") {
                 return "file://" + WallpaperEngineService.screenshotPath + "?v=" + WallpaperEngineService.screenshotVersion;
             }

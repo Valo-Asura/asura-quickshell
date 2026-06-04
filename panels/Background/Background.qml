@@ -86,8 +86,8 @@ Variants {
             id: staticWallpaperContainer
             anchors.fill: parent
             z: 1
-            opacity: WallpaperEngineService.active ? 0 : 1
-            visible: opacity > 0
+            opacity: 0
+            visible: false
             
             Image {
                 id: wallpaper1

@@ -10,6 +10,7 @@ import "panels/StatusBar"
 import "panels/NotificationCenter"
 import "panels/QuickSettings"
 import "panels/WallpaperSelector"
+import "panels/QuickWallpaper"
 import "panels/Background"
 import "panels/NotificationPopup"
 import "panels/OSD"
@@ -69,6 +70,7 @@ ShellRoot {
 
     // ── Phase 6: Wallpaper Selector & Screen Decor ──
     WallpaperSelector {}
+    QuickWallpaper {}
     ScreenCorners {}
 
     IpcHandler {
@@ -94,15 +96,13 @@ ShellRoot {
     IpcHandler {
         target: "quickwallpaper"
         function open() {
-            GlobalStates.wallpaperSelectorTarget = "desktop";
-            GlobalStates.wallpaperSelectorOpen = true;
+            GlobalStates.quickWallpaperOpen = true;
         }
         function close() {
-            GlobalStates.wallpaperSelectorOpen = false;
+            GlobalStates.quickWallpaperOpen = false;
         }
         function toggle() {
-            GlobalStates.wallpaperSelectorTarget = "desktop";
-            GlobalStates.wallpaperSelectorOpen = !GlobalStates.wallpaperSelectorOpen;
+            GlobalStates.quickWallpaperOpen = !GlobalStates.quickWallpaperOpen;
         }
     }
 
