@@ -188,6 +188,22 @@ Singleton {
         }
     }
 
+    function writeHyprpaperConfig(cleanPath) {
+        const confPath = Directories.home.replace("file://", "") + "/.config/hypr/hyprpaper.conf"
+        let confContent = `preload = ${cleanPath}\n`
+        if (HyprlandData.monitors && HyprlandData.monitors.length > 0) {
+            for (let i = 0; i < HyprlandData.monitors.length; i++) {
+                const mon = HyprlandData.monitors[i];
+                if (mon && mon.name) {
+                    confContent += `wallpaper = ${mon.name},${cleanPath}\n`
+                }
+            }
+        } else {
+            confContent += `wallpaper = ,${cleanPath}\n`
+        }
+        Quickshell.execDetached(["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", confContent, confPath])
+    }
+
     function select(path) {
         const cleanPath = path.toString().startsWith("file://") ? path.toString().substring(7) : path.toString()
         Config.options.appearance.background.wallpaperPath = "file://" + cleanPath
@@ -198,18 +214,23 @@ Singleton {
         }
         
         // Write to hyprpaper.conf for persistence across reboots
-        const confPath = Directories.home.replace("file://", "") + "/.config/hypr/hyprpaper.conf"
-        const confContent = `preload = ${cleanPath}\nwallpaper = ,${cleanPath}\n`
-        Quickshell.execDetached(["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", confContent, confPath])
+        writeHyprpaperConfig(cleanPath)
         
         // Ensure hyprpaper is running and set the wallpaper dynamically
-        const applyCmd = `
-            pgrep -x hyprpaper || hyprpaper &
-            sleep 0.2
-            hyprctl hyprpaper preload "${cleanPath}"
-            hyprctl hyprpaper wallpaper ",${cleanPath}"
-            hyprctl hyprpaper unload all
-        `
+        let applyCmd = `pgrep -x hyprpaper || hyprpaper &\n`
+        applyCmd += `sleep 0.2\n`
+        applyCmd += `hyprctl hyprpaper preload "${cleanPath}"\n`
+        if (HyprlandData.monitors && HyprlandData.monitors.length > 0) {
+            for (let i = 0; i < HyprlandData.monitors.length; i++) {
+                const mon = HyprlandData.monitors[i];
+                if (mon && mon.name) {
+                    applyCmd += `hyprctl hyprpaper wallpaper "${mon.name},${cleanPath}"\n`
+                }
+            }
+        } else {
+            applyCmd += `hyprctl hyprpaper wallpaper ",${cleanPath}"\n`
+        }
+        applyCmd += `hyprctl hyprpaper unload all\n`
         Quickshell.execDetached(["bash", "-c", applyCmd])
 
         if (Config.options.appearance.background.matugen) {
@@ -471,17 +492,22 @@ Singleton {
         if (!WallpaperEngineService.active && bg.wallpaperPath && bg.wallpaperPath !== "") {
             const cleanPath = bg.wallpaperPath.toString().startsWith("file://") ? bg.wallpaperPath.toString().substring(7) : bg.wallpaperPath.toString();
             if (cleanPath !== "") {
-                const confPath = Directories.home.replace("file://", "") + "/.config/hypr/hyprpaper.conf"
-                const confContent = `preload = ${cleanPath}\nwallpaper = ,${cleanPath}\n`
-                Quickshell.execDetached(["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", confContent, confPath])
+                writeHyprpaperConfig(cleanPath)
 
-                const initCmd = `
-                    pgrep -x hyprpaper || hyprpaper &
-                    sleep 0.2
-                    hyprctl hyprpaper preload "${cleanPath}"
-                    hyprctl hyprpaper wallpaper ",${cleanPath}"
-                    hyprctl hyprpaper unload all
-                `
+                let initCmd = `pgrep -x hyprpaper || hyprpaper &\n`
+                initCmd += `sleep 0.2\n`
+                initCmd += `hyprctl hyprpaper preload "${cleanPath}"\n`
+                if (HyprlandData.monitors && HyprlandData.monitors.length > 0) {
+                    for (let i = 0; i < HyprlandData.monitors.length; i++) {
+                        const mon = HyprlandData.monitors[i];
+                        if (mon && mon.name) {
+                            initCmd += `hyprctl hyprpaper wallpaper "${mon.name},${cleanPath}"\n`
+                        }
+                    }
+                } else {
+                    initCmd += `hyprctl hyprpaper wallpaper ",${cleanPath}"\n`
+                }
+                initCmd += `hyprctl hyprpaper unload all\n`
                 Quickshell.execDetached(["bash", "-c", initCmd])
             }
         }
@@ -617,6 +643,36 @@ Singleton {
                     root.applyColor(bg.matugenCustomColor);
                 } else {
                     root.applyTheme("mocha.json");
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: HyprlandData
+        function onMonitorsChanged() {
+            if (!Config.ready) return;
+            const bg = Config.options.appearance.background;
+            if (!WallpaperEngineService.active && bg.wallpaperPath && bg.wallpaperPath !== "") {
+                const cleanPath = bg.wallpaperPath.toString().startsWith("file://") ? bg.wallpaperPath.toString().substring(7) : bg.wallpaperPath.toString();
+                if (cleanPath !== "") {
+                    root.writeHyprpaperConfig(cleanPath);
+
+                    let initCmd = `pgrep -x hyprpaper || hyprpaper &\n`
+                    initCmd += `sleep 0.2\n`
+                    initCmd += `hyprctl hyprpaper preload "${cleanPath}"\n`
+                    if (HyprlandData.monitors && HyprlandData.monitors.length > 0) {
+                        for (let i = 0; i < HyprlandData.monitors.length; i++) {
+                            const mon = HyprlandData.monitors[i];
+                            if (mon && mon.name) {
+                                initCmd += `hyprctl hyprpaper wallpaper "${mon.name},${cleanPath}"\n`
+                            }
+                        }
+                    } else {
+                        initCmd += `hyprctl hyprpaper wallpaper ",${cleanPath}"\n`
+                    }
+                    initCmd += `hyprctl hyprpaper unload all\n`
+                    Quickshell.execDetached(["bash", "-c", initCmd])
                 }
             }
         }

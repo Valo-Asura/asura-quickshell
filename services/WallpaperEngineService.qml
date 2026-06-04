@@ -127,9 +127,6 @@ Singleton {
         const clean = cleanPath(path);
         if (clean === "" || !root.isInstalled) return;
 
-        // Kill hyprpaper to save system resources while live wallpaper is active
-        Quickshell.execDetached(["pkill", "-KILL", "-x", "hyprpaper"]);
-
         let output = "*";
         if (HyprlandData.monitors.length > 0) {
             const primary = HyprlandData.monitors.find(m => m.focused) || HyprlandData.monitors[0];
@@ -149,7 +146,13 @@ Singleton {
             mpvOptions.push("--volume=" + Math.max(0, Math.min(100, root.volume)));
         }
 
-        activeProcess.command = ["mpvpaper", "-o", mpvOptions.join(" "), output, clean];
+        // Run via bash to kill hyprpaper and wait a brief moment for it to exit,
+        // preventing the race condition where mpvpaper starts before hyprpaper is dead.
+        activeProcess.command = [
+            "bash",
+            "-c",
+            "pkill -KILL -x hyprpaper; sleep 0.15; exec mpvpaper -o \"" + mpvOptions.join(" ") + "\" \"" + output + "\" \"" + clean + "\""
+        ];
         activeProcess.running = true;
         applyFinishTimer.restart();
     }
@@ -176,13 +179,22 @@ Singleton {
             if (staticPath && staticPath !== "") {
                 const cleanPath = staticPath.toString().startsWith("file://") ? staticPath.toString().substring(7) : staticPath.toString();
                 if (cleanPath !== "") {
-                    const restartCmd = `
-                        pgrep -x hyprpaper || hyprpaper &
-                        sleep 0.2
-                        hyprctl hyprpaper preload "${cleanPath}"
-                        hyprctl hyprpaper wallpaper ",${cleanPath}"
-                        hyprctl hyprpaper unload all
-                    `
+                    Wallpapers.writeHyprpaperConfig(cleanPath)
+
+                    let restartCmd = `pgrep -x hyprpaper || hyprpaper &\n`
+                    restartCmd += `sleep 0.2\n`
+                    restartCmd += `hyprctl hyprpaper preload "${cleanPath}"\n`
+                    if (HyprlandData.monitors && HyprlandData.monitors.length > 0) {
+                        for (let i = 0; i < HyprlandData.monitors.length; i++) {
+                            const mon = HyprlandData.monitors[i];
+                            if (mon && mon.name) {
+                                restartCmd += `hyprctl hyprpaper wallpaper "${mon.name},${cleanPath}"\n`
+                            }
+                        }
+                    } else {
+                        restartCmd += `hyprctl hyprpaper wallpaper ",${cleanPath}"\n`
+                    }
+                    restartCmd += `hyprctl hyprpaper unload all\n`
                     Quickshell.execDetached(["bash", "-c", restartCmd])
                 }
             }
