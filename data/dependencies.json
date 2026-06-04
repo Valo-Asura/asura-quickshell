@@ -42,8 +42,8 @@
     { "name": "qt5ct", "command": "qt5ct", "description": "Qt5 theme manager (External apps)" },
     { "name": "qt6ct", "command": "qt6ct", "description": "Qt6 theme manager (External apps)" },
     { "name": "adw-gtk-theme", "command": "gsettings", "description": "Modern GTK theme" },
-    { "name": "breeze", "command": "kwin_wayland", "description": "KDE theme engine" },
-    { "name": "breeze-icons", "command": "kwin_wayland", "description": "KDE icon set" }
+    { "name": "breeze", "command": "/usr/share/kstyle/themes/breeze.themerc", "description": "KDE theme engine" },
+    { "name": "breeze-icons", "command": "/usr/share/icons/breeze/index.theme", "description": "KDE icon set" }
   ],
   "fonts": [
     { "name": "ttf-material-symbols-variable-git", "command": "fc-list", "description": "Material Symbols Icons" },
