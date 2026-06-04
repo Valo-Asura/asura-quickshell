@@ -127,6 +127,9 @@ Singleton {
         const clean = cleanPath(path);
         if (clean === "" || !root.isInstalled) return;
 
+        // Kill hyprpaper to save system resources while live wallpaper is active
+        Quickshell.execDetached(["pkill", "-KILL", "-x", "hyprpaper"]);
+
         let output = "*";
         if (HyprlandData.monitors.length > 0) {
             const primary = HyprlandData.monitors.find(m => m.focused) || HyprlandData.monitors[0];
@@ -166,6 +169,24 @@ Singleton {
         Quickshell.execDetached(["pkill", "-CONT", "-x", "mpvpaper"]);
         Quickshell.execDetached(["pkill", "-KILL", "-x", "mpvpaper"]);
         root.isPaused = false;
+
+        // Restart hyprpaper and restore the static wallpaper
+        if (Config.ready && Config.options.appearance && Config.options.appearance.background) {
+            const staticPath = Config.options.appearance.background.wallpaperPath;
+            if (staticPath && staticPath !== "") {
+                const cleanPath = staticPath.toString().startsWith("file://") ? staticPath.toString().substring(7) : staticPath.toString();
+                if (cleanPath !== "") {
+                    const restartCmd = `
+                        pgrep -x hyprpaper || hyprpaper &
+                        sleep 0.2
+                        hyprctl hyprpaper preload "${cleanPath}"
+                        hyprctl hyprpaper wallpaper ",${cleanPath}"
+                        hyprctl hyprpaper unload all
+                    `
+                    Quickshell.execDetached(["bash", "-c", restartCmd])
+                }
+            }
+        }
     }
 
     function pause() {
