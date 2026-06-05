@@ -55,7 +55,8 @@
     { "name": "mpvpaper", "command": "mpvpaper", "description": "Local video wallpaper support" }
   ],
   "optional": [
-    { "name": "kitty", "command": "kitty", "description": "Terminal emulator" },
+    { "name": "foot", "command": "foot", "description": "Wayland terminal emulator" },
+    { "name": "ghostty", "command": "ghostty", "description": "GPU terminal emulator" },
     { "name": "fish", "command": "fish", "description": "Interactive shell" },
     { "name": "starship", "command": "starship", "description": "Shell prompt" },
     { "name": "easyeffects", "command": "easyeffects", "description": "Audio enhancement" },

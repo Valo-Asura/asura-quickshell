@@ -320,7 +320,7 @@ Singleton {
                 property int hoverRegionHeight: 5
                 property bool pinnedOnStartup: false
                 property bool monochromeIcons: true
-                property list<string> pinnedApps: ["kitty", "org.gnome.Nautilus"]
+                property list<string> pinnedApps: ["foot", "org.gnome.Nautilus"]
                 property list<string> ignoredAppRegexes: ["^xwaylandvideobridge$"]
                 property string position: "left"
                 property real scale: 1.0

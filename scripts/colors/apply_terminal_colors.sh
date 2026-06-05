@@ -12,10 +12,10 @@ if not os.path.exists(SEQUENCES_FILE):
 
 def apply_colors():
     try:
-        # The /dev/pts/ broadcast was causing terminal emulators (like Kitty/Konsole)
+        # The /dev/pts/ broadcast was causing terminal emulators
         # to trigger "Activity in Background" or "Bell" desktop notifications.
-        # Instead, we will gracefully tell Kitty to reload its colors via IPC.
-        os.system("kitty @ set-colors -a -c ~/.config/kitty/current-theme.conf >/dev/null 2>&1 || true")
+        # Foot and Ghostty read their theme from config and do not need live IPC here.
+        return
     except Exception as e:
         print(f"Error applying colors: {e}", file=sys.stderr)
 

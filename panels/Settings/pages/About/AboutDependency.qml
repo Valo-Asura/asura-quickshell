@@ -154,7 +154,7 @@ ColumnLayout {
 
                             onClicked: {
                                 if (!modelData.installed) {
-                                    Quickshell.execDetached(["kitty", "--hold", "-e", "paru", "-S", "--needed", modelData.name]);
+                                    Quickshell.execDetached(["foot", "--hold", "paru", "-S", "--needed", modelData.name]);
                                 }
                             }
 

@@ -30,6 +30,11 @@ quickshell -c nandoroid
 
 - **Launcher Dial:** GPU-accelerated circular dial with counter-rotating labels, shortest-path wrapping, and calibrated touchpad/mouse scroll swipes.
 - **Smart Dock:** Overlay auto-hide dock with 250ms gap-hover grace period, full-height click-through edge trigger, and live window previews.
+- **HyprMod Display Entry:** Searching `display`, `monitor`, `dual monitor`, `HDMI`, or pressing `Super + P` opens the HyprMod monitor workflow through the local `asura-display-manager` wrapper.
+- **Quick Wallpaper Picker:** Separate quick wallpaper selector inspired by `skwd-wall`, with local image and live-wallpaper entry points.
+- **Workspace Overview:** `Alt + Tab` opens the Nandoroid workspace overview so windows can be moved between workspaces by drag/drop.
+- **Status Bar Hardware Feedback:** Battery charging uses the cyan animated state, and system widgets are wired to local Hyprland/system services.
+- **Foot/Ghostty Terminal Defaults:** Shell actions now prefer Foot, with Ghostty configured separately for Fastfetch-on-open in the system config repo.
 - **Intel Power Syncer:** Real-time cpufreq governor, EPP, and Turbo Boost sysfs syncer daemon for Intel Core (i5-12500H) laptops.
 - **Greetd Isolation:** Console-based login manager `tuigreet` cleanly isolated to VT 2 with custom systemd service override.
 
@@ -41,7 +46,18 @@ quickshell -c nandoroid
 - `Super + G`: Quick Actions
 - `Super + I`: Settings Sidebar
 - `Super + W`: System Monitor
+- `Super + P`: HyprMod display/monitor manager
 - `Super + V`: Clipboard History
+- `Alt + Tab`: Workspace overview
+
+## Related System Backup
+
+Full system restore scripts, terminal configs, Hyprland config, NVIDIA boot
+recovery docs, package manifests, and AI-memory documentation live in:
+
+```text
+https://github.com/Valo-Asura/asura-system-config
+```
 
 ## Credits
 
